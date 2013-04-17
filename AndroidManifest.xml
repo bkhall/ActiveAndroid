@@ -3,14 +3,8 @@
       package="com.activeandroid"
       android:versionCode="1"
       android:versionName="1.0">
-    <uses-sdk android:minSdkVersion="4"/>
-    <application>
-        <activity android:name="ActiveAndroid"
-                  android:label="ActiveAndroid">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-    </application>
+      
+        <uses-sdk
+        android:minSdkVersion="8"
+        android:targetSdkVersion="17" />
 </manifest>
