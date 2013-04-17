@@ -29,6 +29,7 @@ import android.database.DataSetObservable;
 import com.activeandroid.annotation.Column;
 import com.activeandroid.annotation.Table;
 import com.activeandroid.util.Log;
+import com.activeandroid.util.SQLiteUtils.ConflictAction;
 
 public final class TableInfo extends DataSetObservable {
 	//////////////////////////////////////////////////////////////////////////////////////
@@ -37,6 +38,9 @@ public final class TableInfo extends DataSetObservable {
 
 	private Class<? extends Model> mType;
 	private String mTableName;
+	private boolean mHasMultiColumnUniqueConstraint;
+	private String[] mMultiColumnUniqueConstraintColumns;
+	private ConflictAction mOnMultiColumnUniqueConstraintConflict;
 
 	private Map<Field, String> mColumnNames = new HashMap<Field, String>();
 
@@ -50,6 +54,9 @@ public final class TableInfo extends DataSetObservable {
 		final Table tableAnnotation = type.getAnnotation(Table.class);
 		if (tableAnnotation != null) {
 			mTableName = tableAnnotation.name();
+			mHasMultiColumnUniqueConstraint = tableAnnotation.hasMultiColumnUniqueConstraint();
+			mMultiColumnUniqueConstraintColumns = tableAnnotation.multiColumnUniqueConstraintColumns();
+			mOnMultiColumnUniqueConstraintConflict = tableAnnotation.onMultiColumnUniqueConstraintConflict();
 		}
 		else {
 			mTableName = type.getSimpleName();
@@ -76,6 +83,18 @@ public final class TableInfo extends DataSetObservable {
 
 	public String getTableName() {
 		return mTableName;
+	}
+
+	public boolean hasMultiColumnUniqueConstraint() {
+		return mHasMultiColumnUniqueConstraint;
+	}
+
+	public String[] getMultiColumnUniqueConstraintColumns() {
+		return mMultiColumnUniqueConstraintColumns;
+	}
+
+	public ConflictAction getOnMultiColumnUniqueConstraintConflict() {
+		return mOnMultiColumnUniqueConstraintConflict;
 	}
 
 	public Collection<Field> getFields() {

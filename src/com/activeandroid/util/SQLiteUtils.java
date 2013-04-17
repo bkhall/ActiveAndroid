@@ -37,6 +37,14 @@ public final class SQLiteUtils {
 	// ENUMERATIONS
 	//////////////////////////////////////////////////////////////////////////////////////
 
+	public enum ConflictAction {
+		ROLLBACK, ABORT, FAIL, IGNORE, REPLACE
+	}
+
+	public enum ForeignKeyAction {
+		SET_NULL, SET_DEFAULT, CASCADE, RESTRICT, NO_ACTION
+	}
+
 	public enum SQLiteType {
 		INTEGER, REAL, TEXT, BLOB
 	}
@@ -117,9 +125,17 @@ public final class SQLiteUtils {
 				definitions.add(definition);
 			}
 		}
-
+		
+		String definitionStr = TextUtils.join(", ", definitions);
+		
+		if (tableInfo.hasMultiColumnUniqueConstraint()) {
+			definitionStr += ", UNIQUE(";
+			definitionStr += TextUtils.join(", ", tableInfo.getMultiColumnUniqueConstraintColumns());
+			definitionStr += ") ON CONFLICT " + tableInfo.getOnMultiColumnUniqueConstraintConflict().toString();
+		}
+		
 		return String.format("CREATE TABLE IF NOT EXISTS %s (%s);", tableInfo.getTableName(),
-				TextUtils.join(", ", definitions));
+				definitionStr);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -161,7 +177,7 @@ public final class SQLiteUtils {
 			if (column.unique()) {
 				definition += " UNIQUE ON CONFLICT " + column.onUniqueConflict().toString();
 			}
-
+			
 			if (FOREIGN_KEYS_SUPPORTED && ReflectionUtils.isModel(type)) {
 				definition += " REFERENCES " + Cache.getTableInfo((Class<? extends Model>) type).getTableName() + "(Id)";
 				definition += " ON DELETE " + column.onDelete().toString().replace("_", " ");

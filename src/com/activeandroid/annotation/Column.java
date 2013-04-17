@@ -21,17 +21,12 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import com.activeandroid.util.SQLiteUtils.ConflictAction;
+import com.activeandroid.util.SQLiteUtils.ForeignKeyAction;
+
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Column {
-	public enum ConflictAction {
-		ROLLBACK, ABORT, FAIL, IGNORE, REPLACE
-	}
-
-	public enum ForeignKeyAction {
-		SET_NULL, SET_DEFAULT, CASCADE, RESTRICT, NO_ACTION
-	}
-
 	public String name();
 
 	public int length() default -1;

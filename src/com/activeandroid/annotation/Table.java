@@ -21,8 +21,16 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import com.activeandroid.util.SQLiteUtils.ConflictAction;
+
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Table {
 	public String name();
+
+	public boolean hasMultiColumnUniqueConstraint() default false;
+	
+	public String[] multiColumnUniqueConstraintColumns() default {"Id"};
+
+	public ConflictAction onMultiColumnUniqueConstraintConflict() default ConflictAction.FAIL;
 }
