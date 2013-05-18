@@ -21,17 +21,35 @@ public class ModelAdapter<T extends Model> extends ArrayAdapter<T> {
 		super(context, textViewResourceId, objects);
 	}
 
-	public ModelAdapter(Context context, int resource, int textViewResourceId, List<T> objects) {
+	public ModelAdapter(Context context, int resource, int textViewResourceId,
+			List<T> objects) {
 		super(context, resource, textViewResourceId, objects);
 	}
 
 	/**
 	 * Clears the adapter and, if data != null, fills if with new Items.
 	 * 
-	 * @param collection A Collection<? extends T> which members get added to the adapter.
+	 * @param collection
+	 *            A Collection<? extends T> which members get added to the
+	 *            adapter.
 	 */
 	public void setData(Collection<? extends T> collection) {
-		clear();
+		setData(collection, false);
+	}
+
+	/**
+	 * Clears the adapter and, if data != null, fills if with new Items.
+	 * 
+	 * @param collection
+	 *            A Collection<? extends T> which members get added to the
+	 *            adapter.
+	 * @param append
+	 *            A flag to indicate the current data set should not be cleared
+	 *            adding the new data.
+	 */
+	public void setData(Collection<? extends T> collection, boolean append) {
+		if (collection == null || !append)
+			clear();
 
 		if (collection != null) {
 			for (T item : collection) {
@@ -49,8 +67,7 @@ public class ModelAdapter<T extends Model> extends ArrayAdapter<T> {
 
 		if (item != null) {
 			return item.getId();
-		}
-		else {
+		} else {
 			return -1;
 		}
 	}

@@ -128,10 +128,10 @@ public final class SQLiteUtils {
 		
 		String definitionStr = TextUtils.join(", ", definitions);
 		
-		if (tableInfo.hasCompositeKey()) {
+		if (tableInfo.uniqueConstraint() && tableInfo.getUniqueConstraintColumns().length > 1) {
 			definitionStr += ", UNIQUE(";
-			definitionStr += TextUtils.join(", ", tableInfo.getCompositeKeyColumns());
-			definitionStr += ") ON CONFLICT " + tableInfo.getOnCompositeKeyConflict().toString();
+			definitionStr += TextUtils.join(", ", tableInfo.getUniqueConstraintColumns());
+			definitionStr += ") ON CONFLICT " + tableInfo.getOnUniqueConstraintConflict().toString();
 		}
 		
 		return String.format("CREATE TABLE IF NOT EXISTS %s (%s);", tableInfo.getTableName(),

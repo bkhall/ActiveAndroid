@@ -38,9 +38,9 @@ public final class TableInfo extends DataSetObservable {
 
 	private Class<? extends Model> mType;
 	private String mTableName;
-	private boolean mHasCompositeKey;
-	private String[] mCompositeKeyColumns;
-	private ConflictAction mOnCompositeKeyConflict;
+	private boolean mUniqueConstraint;
+	private String[] mUniqueConstraintColumns;
+	private ConflictAction mOnUniqueConstraintConflict;
 
 	private Map<Field, String> mColumnNames = new HashMap<Field, String>();
 
@@ -54,9 +54,9 @@ public final class TableInfo extends DataSetObservable {
 		final Table tableAnnotation = type.getAnnotation(Table.class);
 		if (tableAnnotation != null) {
 			mTableName = tableAnnotation.name();
-			mHasCompositeKey = tableAnnotation.hasCompositeKey();
-			mCompositeKeyColumns = tableAnnotation.compositeKeyColumns();
-			mOnCompositeKeyConflict = tableAnnotation.onCompositeKeyConflict();
+			mUniqueConstraint = tableAnnotation.uniqueConstraint();
+			mUniqueConstraintColumns = tableAnnotation.uniqueConstraintColumns();
+			mOnUniqueConstraintConflict = tableAnnotation.onUniqueConstraintConflict();
 		}
 		else {
 			mTableName = type.getSimpleName();
@@ -85,16 +85,16 @@ public final class TableInfo extends DataSetObservable {
 		return mTableName;
 	}
 
-	public boolean hasCompositeKey() {
-		return mHasCompositeKey;
+	public boolean uniqueConstraint() {
+		return mUniqueConstraint;
 	}
 
-	public String[] getCompositeKeyColumns() {
-		return mCompositeKeyColumns;
+	public String[] getUniqueConstraintColumns() {
+		return mUniqueConstraintColumns;
 	}
 
-	public ConflictAction getOnCompositeKeyConflict() {
-		return mOnCompositeKeyConflict;
+	public ConflictAction getOnUniqueConstraintConflict() {
+		return mOnUniqueConstraintConflict;
 	}
 
 	public Collection<Field> getFields() {

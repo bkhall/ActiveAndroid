@@ -28,29 +28,30 @@ import com.activeandroid.serializer.TypeSerializer;
 import com.activeandroid.util.Log;
 
 public final class Cache {
-	//////////////////////////////////////////////////////////////////////////////////////
+	// ////////////////////////////////////////////////////////////////////////////////////
 	// PRIVATE MEMBERS
-	//////////////////////////////////////////////////////////////////////////////////////
+	// ////////////////////////////////////////////////////////////////////////////////////
 
 	private static Context sContext;
 
 	private static ModelInfo sModelInfo;
 	private static DatabaseHelper sDatabaseHelper;
+	private static SQLiteDatabase mDb;
 
 	private static Set<Model> sEntities;
 
 	private static boolean sIsInitialized = false;
 
-	//////////////////////////////////////////////////////////////////////////////////////
+	// ////////////////////////////////////////////////////////////////////////////////////
 	// CONSTRUCTORS
-	//////////////////////////////////////////////////////////////////////////////////////
+	// ////////////////////////////////////////////////////////////////////////////////////
 
 	private Cache() {
 	}
 
-	//////////////////////////////////////////////////////////////////////////////////////
+	// ////////////////////////////////////////////////////////////////////////////////////
 	// PUBLIC METHODS
-	//////////////////////////////////////////////////////////////////////////////////////
+	// ////////////////////////////////////////////////////////////////////////////////////
 
 	public static synchronized void initialize(Application application) {
 		if (sIsInitialized) {
@@ -61,7 +62,7 @@ public final class Cache {
 		sContext = application;
 
 		sModelInfo = new ModelInfo(application);
-		sDatabaseHelper = new DatabaseHelper(sContext);
+		sDatabaseHelper = DatabaseHelper.getInstance(sContext);
 
 		sEntities = new HashSet<Model>();
 
@@ -80,7 +81,7 @@ public final class Cache {
 	public static synchronized void dispose() {
 		checkInitialization();
 		closeDatabase();
-		
+
 		sEntities = null;
 		sModelInfo = null;
 		sDatabaseHelper = null;
@@ -96,7 +97,11 @@ public final class Cache {
 		if (sDatabaseHelper == null) {
 			checkInitialization();
 		}
-		return sDatabaseHelper.getWritableDatabase();
+		
+		if (mDb == null)
+			mDb = sDatabaseHelper.getWritableDatabase();
+		
+		return mDb;
 	}
 
 	public static synchronized void closeDatabase() {
@@ -118,10 +123,12 @@ public final class Cache {
 		sEntities.add(entity);
 	}
 
-	public static synchronized Model getEntity(Class<? extends Model> type, long id) {
+	public static synchronized Model getEntity(Class<? extends Model> type,
+			long id) {
 		checkInitialization();
 		for (Model entity : sEntities) {
-			if (entity != null && entity.getClass() != null && entity.getClass() == type && entity.getId() != null
+			if (entity != null && entity.getClass() != null
+					&& entity.getClass() == type && entity.getId() != null
 					&& entity.getId() == id) {
 
 				return entity;
@@ -143,7 +150,8 @@ public final class Cache {
 		return sModelInfo.getTableInfos();
 	}
 
-	public static synchronized TableInfo getTableInfo(Class<? extends Model> type) {
+	public static synchronized TableInfo getTableInfo(
+			Class<? extends Model> type) {
 		checkInitialization();
 		return sModelInfo.getTableInfo(type);
 	}

@@ -37,27 +37,39 @@ import com.activeandroid.util.ReflectionUtils;
 import com.activeandroid.util.SQLiteUtils;
 
 public final class DatabaseHelper extends SQLiteOpenHelper {
-	//////////////////////////////////////////////////////////////////////////////////////
+	// ////////////////////////////////////////////////////////////////////////////////////
 	// PRIVATE CONSTANTS
-	//////////////////////////////////////////////////////////////////////////////////////
+	// ////////////////////////////////////////////////////////////////////////////////////
+
+	private static DatabaseHelper mInstance = null;
 
 	private final static String AA_DB_NAME = "AA_DB_NAME";
 	private final static String AA_DB_VERSION = "AA_DB_VERSION";
 
 	private final static String MIGRATION_PATH = "migrations";
 
-	//////////////////////////////////////////////////////////////////////////////////////
+	// ////////////////////////////////////////////////////////////////////////////////////
 	// CONSTRUCTORS
-	//////////////////////////////////////////////////////////////////////////////////////
+	// ////////////////////////////////////////////////////////////////////////////////////
 
-	public DatabaseHelper(Context context) {
+	public static DatabaseHelper getInstance(Context context) {
+		// Use the application context, which will ensure that you
+		// don't accidentally leak an Activity's context.
+		// See this article for more information: http://bit.ly/6LRzfx
+		if (mInstance == null) {
+			mInstance = new DatabaseHelper(context.getApplicationContext());
+		}
+		return mInstance;
+	}
+
+	private DatabaseHelper(Context context) {
 		super(context, getDbName(context), null, getDbVersion(context));
 		copyAttachedDatabase(context);
 	}
 
-	//////////////////////////////////////////////////////////////////////////////////////
+	// ////////////////////////////////////////////////////////////////////////////////////
 	// OVERRIDEN METHODS
-	//////////////////////////////////////////////////////////////////////////////////////
+	// ////////////////////////////////////////////////////////////////////////////////////
 
 	@Override
 	public void onOpen(SQLiteDatabase db) {
@@ -74,17 +86,8 @@ public final class DatabaseHelper extends SQLiteOpenHelper {
 			Log.i("Foreign Keys supported. Enabling foreign key features.");
 		}
 
-		db.beginTransaction();
-
-		try {
-			for (TableInfo tableInfo : Cache.getTableInfos()) {
-				db.execSQL(SQLiteUtils.createTableDefinition(tableInfo));
-			}
-
-			db.setTransactionSuccessful();
-		}
-		finally {
-			db.endTransaction();
+		for (TableInfo tableInfo : Cache.getTableInfos()) {
+			db.execSQL(SQLiteUtils.createTableDefinition(tableInfo));
 		}
 
 		executeMigrations(db, -1, db.getVersion());
@@ -103,9 +106,9 @@ public final class DatabaseHelper extends SQLiteOpenHelper {
 		}
 	}
 
-	//////////////////////////////////////////////////////////////////////////////////////
+	// ////////////////////////////////////////////////////////////////////////////////////
 	// PUBLIC METHODS
-	//////////////////////////////////////////////////////////////////////////////////////
+	// ////////////////////////////////////////////////////////////////////////////////////
 
 	public void copyAttachedDatabase(Context context) {
 		String dbName = getDbName(context);
@@ -134,27 +137,29 @@ public final class DatabaseHelper extends SQLiteOpenHelper {
 			output.flush();
 			output.close();
 			inputStream.close();
-		}
-		catch (IOException e) {
+		} catch (IOException e) {
 			Log.e("Failed to open file", e);
 		}
 	}
 
-	//////////////////////////////////////////////////////////////////////////////////////
+	// ////////////////////////////////////////////////////////////////////////////////////
 	// PRIVATE METHODS
-	//////////////////////////////////////////////////////////////////////////////////////
+	// ////////////////////////////////////////////////////////////////////////////////////
 
-	private boolean executeMigrations(SQLiteDatabase db, int oldVersion, int newVersion) {
+	private boolean executeMigrations(SQLiteDatabase db, int oldVersion,
+			int newVersion) {
 		boolean migrationExecuted = false;
 		try {
-			final List<String> files = Arrays.asList(Cache.getContext().getAssets().list(MIGRATION_PATH));
+			final List<String> files = Arrays.asList(Cache.getContext()
+					.getAssets().list(MIGRATION_PATH));
 			Collections.sort(files, new NaturalOrderComparator());
 
 			db.beginTransaction();
 			try {
 				for (String file : files) {
 					try {
-						final int version = Integer.valueOf(file.replace(".sql", ""));
+						final int version = Integer.valueOf(file.replace(
+								".sql", ""));
 
 						if (version > oldVersion && version <= newVersion) {
 							executeSqlScript(db, file);
@@ -162,18 +167,15 @@ public final class DatabaseHelper extends SQLiteOpenHelper {
 
 							Log.i(file + " executed succesfully.");
 						}
-					}
-					catch (NumberFormatException e) {
+					} catch (NumberFormatException e) {
 						Log.w("Skipping invalidly named file: " + file, e);
 					}
 				}
 				db.setTransactionSuccessful();
-			}
-			finally {
+			} finally {
 				db.endTransaction();
 			}
-		}
-		catch (IOException e) {
+		} catch (IOException e) {
 			Log.e("Failed to execute migrations.", e);
 		}
 
@@ -182,15 +184,16 @@ public final class DatabaseHelper extends SQLiteOpenHelper {
 
 	private void executeSqlScript(SQLiteDatabase db, String file) {
 		try {
-			final InputStream input = Cache.getContext().getAssets().open(MIGRATION_PATH + "/" + file);
-			final BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+			final InputStream input = Cache.getContext().getAssets()
+					.open(MIGRATION_PATH + "/" + file);
+			final BufferedReader reader = new BufferedReader(
+					new InputStreamReader(input));
 			String line = null;
 
 			while ((line = reader.readLine()) != null) {
 				db.execSQL(line.replace(";", ""));
 			}
-		}
-		catch (IOException e) {
+		} catch (IOException e) {
 			Log.e("Failed to execute " + file, e);
 		}
 	}

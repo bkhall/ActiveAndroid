@@ -19,12 +19,15 @@ public class ModelLoader<T extends Model> extends AsyncTaskLoader<List<T>> {
 
 	/** The m data set observer. */
 	private DataSetObserver mDataSetObserver;
-	
+
 	/** The m query. */
 	private From mQuery;
 
 	/** The m results. */
 	private List<T> mResults;
+
+	/** Observer switch */
+	private boolean mUseObserver;
 
 	/**
 	 * Instantiates a new model loader.
@@ -35,8 +38,22 @@ public class ModelLoader<T extends Model> extends AsyncTaskLoader<List<T>> {
 	 *            the from
 	 */
 	public ModelLoader(Context context, From from) {
+		this(context, false, from);
+	}
+
+	/**
+	 * Instantiates a new model loader.
+	 * 
+	 * @param context
+	 *            the context
+	 * @param boolean the useObserver switch
+	 * @param from
+	 *            the from
+	 */
+	public ModelLoader(Context context, boolean useObserver, From from) {
 		super(context);
-		this.mQuery = from;
+		mUseObserver = useObserver;
+		mQuery = from;
 	}
 
 	/**
@@ -49,27 +66,12 @@ public class ModelLoader<T extends Model> extends AsyncTaskLoader<List<T>> {
 	 */
 	@Override
 	public void deliverResult(List<T> toolData) {
-		if (this.isReset()) {
-			// An async query came in while the loader is stopped. We
-			// don't need the result.
-			if (toolData != null) {
-				this.onReleaseResources(toolData);
-			}
-		}
-		List<T> oldToolData = toolData;
-		this.mResults = toolData;
+		mResults = toolData;
 
-		if (this.isStarted()) {
+		if (isStarted()) {
 			// If the Loader is currently started, we can immediately
 			// deliver its results.
 			super.deliverResult(toolData);
-		}
-
-		// At this point we can release the resources associated with
-		// 'oldApps' if needed; now that the new result is delivered we
-		// know that it is no longer in use.
-		if (oldToolData != null) {
-			this.onReleaseResources(oldToolData);
 		}
 	}
 
@@ -82,32 +84,7 @@ public class ModelLoader<T extends Model> extends AsyncTaskLoader<List<T>> {
 	 */
 	@Override
 	public List<T> loadInBackground() {
-		List<T> results = this.mQuery.execute();
-		return results;
-	}
-
-	/**
-	 * Handles a request to cancel a load.
-	 * 
-	 * @param toolData
-	 *            the tool data
-	 */
-	@Override
-	public void onCanceled(List<T> toolData) {
-		super.onCanceled(toolData);
-		// At this point we can release the resources
-		this.onReleaseResources(toolData);
-	}
-
-	/**
-	 * On release resources.
-	 * 
-	 * @param toolData
-	 *            the tool data
-	 */
-	protected void onReleaseResources(List<T> toolData) {
-		// For a simple List<> there is nothing to do. For something
-		// like a Cursor, we would close it here.
+		return mQuery.execute();
 	}
 
 	/**
@@ -118,19 +95,17 @@ public class ModelLoader<T extends Model> extends AsyncTaskLoader<List<T>> {
 		super.onReset();
 
 		// Ensure the loader is stopped
-		this.onStopLoading();
+		onStopLoading();
 
-		// At this point we can release the resources associated with 'apps'
+		// At this point we can release the resources associated with the list
 		// if needed.
-		if (this.mResults != null) {
-			this.onReleaseResources(this.mResults);
-			this.mResults = null;
-		}
+		mResults = null;
 
 		// Stop monitoring for changes.
-		if (this.mDataSetObserver != null) {
-			Model.unregisterDataSetObserver(mQuery.getModelType(), this.mDataSetObserver);
-			this.mDataSetObserver = null;
+		if (mDataSetObserver != null) {
+			Model.unregisterDataSetObserver(mQuery.getModelType(),
+					mDataSetObserver);
+			mDataSetObserver = null;
 		}
 	}
 
@@ -139,47 +114,43 @@ public class ModelLoader<T extends Model> extends AsyncTaskLoader<List<T>> {
 	 */
 	@Override
 	protected void onStartLoading() {
-		if (this.mResults != null) {
+		if (mResults != null) {
 			// If we currently have a result available, deliver it
 			// immediately.
-			this.deliverResult(this.mResults);
+			deliverResult(mResults);
 		}
 
 		// Start watching for changes in the job data.
-		if (this.mDataSetObserver == null) {
-			this.mDataSetObserver = new DataSetObserver() {
+		if (mDataSetObserver == null && mUseObserver) {
+			mDataSetObserver = new DataSetObserver() {
 				@Override
 				public void onChanged() {
 					super.onChanged();
-					
+
 					/*
 					 * It's always a freakin' threading issue, ain't it?
 					 * Directly calling onContentChanged here doesn't seem to
-					 * consistently work, but posting it to the main thread does.
+					 * consistently work, but posting it to the main thread
+					 * does.
 					 */
-					
-					// Get a handler that can be used to post to the main thread
-					Handler mainHandler = new Handler(getContext().getMainLooper());
-
-					Runnable myRunnable = new Runnable() {
-						@Override
-						public void run() {
-							ModelLoader.this.onContentChanged();
-						}
-					};
-					
-					mainHandler.post(myRunnable);
-
+					new Handler(getContext().getMainLooper())
+							.postAtFrontOfQueue(new Runnable() {
+								@Override
+								public void run() {
+									ModelLoader.this.onContentChanged();
+								}
+							});
 				}
 			};
 
-			Model.registerDataSetObserver(mQuery.getModelType(), this.mDataSetObserver);
+			Model.registerDataSetObserver(mQuery.getModelType(),
+					mDataSetObserver);
 		}
 
-		if (this.takeContentChanged() || (this.mResults == null)) {
+		if (takeContentChanged() || mResults == null) {
 			// If the data has changed since the last time it was loaded
 			// or is not currently available, start a load.
-			this.forceLoad();
+			forceLoad();
 		}
 	}
 
@@ -189,7 +160,6 @@ public class ModelLoader<T extends Model> extends AsyncTaskLoader<List<T>> {
 	@Override
 	protected void onStopLoading() {
 		// Attempt to cancel the current load task if possible.
-		this.cancelLoad();
+		cancelLoad();
 	}
-
 }

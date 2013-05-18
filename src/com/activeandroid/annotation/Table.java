@@ -28,9 +28,9 @@ import com.activeandroid.util.SQLiteUtils.ConflictAction;
 public @interface Table {
 	public String name();
 
-	public boolean hasCompositeKey() default false;
+	public boolean uniqueConstraint() default false;
 	
-	public String[] compositeKeyColumns() default {"Id"};
+	public String[] uniqueConstraintColumns() default {};
 
-	public ConflictAction onCompositeKeyConflict() default ConflictAction.FAIL;
+	public ConflictAction onUniqueConstraintConflict() default ConflictAction.FAIL;
 }

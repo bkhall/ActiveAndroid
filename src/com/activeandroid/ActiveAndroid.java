@@ -18,19 +18,22 @@ package com.activeandroid;
 
 import android.app.Application;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteTransactionListener;
+import android.os.Build;
 
 import com.activeandroid.util.Log;
 
 public final class ActiveAndroid {
-	//////////////////////////////////////////////////////////////////////////////////////
+	// ////////////////////////////////////////////////////////////////////////////////////
 	// PUBLIC METHODS
-	//////////////////////////////////////////////////////////////////////////////////////
+	// ////////////////////////////////////////////////////////////////////////////////////
 
 	public synchronized static void initialize(Application application) {
 		initialize(application, false);
 	}
 
-	public synchronized static void initialize(Application application, boolean loggingEnabled) {
+	public synchronized static void initialize(Application application,
+			boolean loggingEnabled) {
 		setLoggingEnabled(loggingEnabled);
 		Cache.initialize(application);
 	}
@@ -53,6 +56,24 @@ public final class ActiveAndroid {
 
 	public static void beginTransaction() {
 		Cache.openDatabase().beginTransaction();
+	}
+
+	public static void beginTransactionWithListener(SQLiteTransactionListener transactionListener) {
+		Cache.openDatabase().beginTransactionWithListener(transactionListener);
+	}
+
+	public static void beginTransactionNonExclusive() {
+		if (Build.VERSION.SDK_INT >= 11)
+			Cache.openDatabase().beginTransactionNonExclusive();
+		else
+			beginTransaction();
+	}
+
+	public static void beginTransactionWithListenerNonExclusive(SQLiteTransactionListener transactionListener) {
+		if (Build.VERSION.SDK_INT >= 11)
+			Cache.openDatabase().beginTransactionWithListenerNonExclusive(transactionListener);
+		else
+			beginTransactionWithListener(transactionListener);
 	}
 
 	public static void endTransaction() {
